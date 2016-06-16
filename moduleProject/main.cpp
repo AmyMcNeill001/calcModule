@@ -84,15 +84,14 @@ void readDivide (vector<Calculator> &tokens, int &index, string line)
     index++;
 }//END function readDivide
    
-void readSpace (vector<Calculator> &tokens, int &index, string line)
+void multiply(vector<Calculator> &tokens, vector<Calculator> &new_tokens, int &index)
 {
-    Calculator newCalc;
-    newCalc.type = "SPACE";
-    newCalc.symbol = '_';
-    tokens.push_back(newCalc);
-
-    index++;
-}//END function readSpace
+    Calculator temp;
+    temp.type = "NUMBER";
+    temp.number= (tokens[index].number * tokens[index - 2].number);
+    
+    new_tokens.push_back(temp);
+}//END function multiply
    
    
 vector<Calculator> tokenize(string line)
@@ -122,41 +121,52 @@ vector<Calculator> tokenize(string line)
     return tokens;
 }//END function tokenize
 
-void  orderOfOperations(vector<Calculator> &tokens, double &answer)
+vector<Calculator>  evaluateMultiplyAndDivide(vector<Calculator> &tokens)
 {
     int index = 0;
-    while (index < tokens.size())
+    vector<Calculator> new_tokens;
+    
+    
+    while ( index < tokens.size())
     {
-        if ( tokens[index].symbol == '*')
-        {
-            answer = answer + (tokens[index - 1].number * tokens[index + 1].number);
-            tokens[index -1].type = "SPACE";
-            tokens[index].type = "SPACE";
-            tokens[index +1].type = "SPACE";
-        }//END multiplication elif
+        int temp = tokens[index].number;
+        bool tempChanged = false;
         
-        else if( tokens[index].symbol == '/')
+        while ((tokens[index + 1].type == "TIMES" || tokens[index + 1].type == "DIVIDE"))
         {
+            tempChanged = true;
             
-            answer = answer + (tokens[index - 1].number / tokens[index + 1].number);
-            tokens[index -1].type = tokens[index].type = tokens[index +1].type = "SPACE";
+            if (tokens[index + 1].symbol == '*')
+                temp = temp * tokens[index+2].number;
             
-        }//END division elif
-        index++;
-    }//END while loop to iterate through vector and perform * and / first
+            else if(tokens[index + 1].symbol == '/')
+                temp = temp / tokens[index+2].number;
+            
+            index = index + 2;
+        }//END while loop to accumulate divisions and multiplications
+        
+        if(tempChanged)
+        {
+            Calculator addMe;
+            addMe.type = "NUMBER";
+            addMe.number = temp;
+            new_tokens.push_back(addMe);
+        }
+        
+        else
+        {
+            new_tokens.push_back(tokens[index]);
+            index++;
+        }
+
+    }//END while loop for whole vector
+    return new_tokens;
 }//END function order of operations
 
    
-double evaluate(vector<Calculator> &tokens)
+double evaluatePlusAndMinus(vector<Calculator> &tokens)
 {
-    double answer = 0;
-    orderOfOperations(tokens, answer);
-    
-    if( tokens[0].type != "SPACE")
-    {
-        answer = answer + tokens[0].number;
-    }
-    
+    double answer = tokens[0].number;
     int index = 2;
 
     while (index < tokens.size())
@@ -169,14 +179,19 @@ double evaluate(vector<Calculator> &tokens)
                 answer = answer - tokens[index].number;
             else if( tokens[index - 1].type == "SPACE")
                 cout << " ";
-            else
-                cout << "Invalid syntax" << endl;
         }//END if statement for numbers
         
         index++;
     }//END while loop
 
     return answer;    
+}//END function evaluate
+
+
+double evaluate(vector<Calculator> &tokens)
+{
+    vector<Calculator> new_tokens = evaluateMultiplyAndDivide(tokens);
+    return evaluatePlusAndMinus(new_tokens);
 }//END function evaluate
 
 int main()
